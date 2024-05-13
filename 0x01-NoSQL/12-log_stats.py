@@ -7,6 +7,9 @@ from pymongo import MongoClient
 
 
 def log_statistics():
+    """
+    Provides some stats about Nginx logs stored in MongoDB:
+    """
     client = MongoClient('mongodb://127.0.0.1:27017')
     logs_collection = client.logs.nginx
     count = logs_collection.count_documents({})
