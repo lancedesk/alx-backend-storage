@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
 Provides statistics about Nginx logs stored in MongoDB.
-Provides top 10 most present IP Addresses
 """
 
 from pymongo import MongoClient
 
 
-def top_ips(logs_collection):
+def log_stats_with_top_ips(logs_collection):
     """
-    Returns the top 10 most present IP addresses in the logs collection.
+    Provides statistics about Nginx logs stored in MongoDB.
+    Adds the top 10 most present IP addresses.
     """
-
     count = logs_collection.count_documents({})
     print("{} logs".format(count))
     print("Methods:")
@@ -49,13 +48,10 @@ def top_ips(logs_collection):
     }])
 
     print("IPs:")
-    top_ip_list = []
     for doc in top_ips:
-        top_ip_list.append((doc.get("_id"), doc.get("count")))
-    return top_ip_list
-
+        print("\t{}: {}".format(doc.get("_id"), doc.get("count")))
 
 if __name__ == "__main__":
     client = MongoClient('mongodb://127.0.0.1:27017')
     logs_collection = client.logs.nginx
-    top_ips(logs_collection)
+    log_stats_with_top_ips(logs_collection)
