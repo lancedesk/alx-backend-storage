@@ -12,6 +12,9 @@ from typing import Callable
 from functools import wraps
 
 redis_client = redis.Redis()
+"""
+Instance of Redis
+"""
 
 
 def count_requests(method: Callable) -> Callable:
@@ -20,7 +23,7 @@ def count_requests(method: Callable) -> Callable:
     """
 
     @wraps(method)
-    def wrapper(url: str) -> str:
+    def wrapper(url):
         """
         Wrapper function to count requests and cache the HTML content.
         """
@@ -30,11 +33,9 @@ def count_requests(method: Callable) -> Callable:
         if cached_html:
             return cached_html.decode('utf-8')
 
-        html_content = method(url)
-        redis_client.set(f'count:{url}', 0)
-        redis_client.setex(f"cached:{url}", 10, html_content)
-
-        return html_content
+        html = method(url)
+        redis_client.setex(f"cached:{url}", 10, html)
+        return html
 
     return wrapper
 
@@ -52,3 +53,8 @@ def get_page(url: str) -> str:
     """
     response = requests.get(url)
     return response.text
+
+
+if __name__ == "__main__":
+    html_page = get_page('http://slowwly.robertomurray.co.uk')
+    print(html_page)
