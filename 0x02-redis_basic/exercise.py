@@ -54,14 +54,16 @@ def replay(method: Callable) -> None:
     """
     method_name = method.__qualname__
     redis_client = method.__self__._redis
-    inputs = redis_client.lrange(method_name + ":inputs", 0, -1)
-    outputs = redis_client.lrange(method_name + ":outputs", 0, -1)
+    inputs = redis_client.lrange("{}:inputs".format(method_name), 0, -1)
+    outputs = redis_client.lrange("{}:outputs".format(method_name), 0, -1)
 
-    print(f"{method_name} was called {len(inputs)} times:")
+    print('{} was called {} times:'.format(method_name, len(inputs)))
     for input_data, output_data in zip(inputs, outputs):
-        input_data = input_data.decode("utf-8")
-        output_data = output_data.decode("utf-8")
-        print(f"{method_name}(*{input_data}) -> {output_data}")
+        print("{}(*{}) -> {}".format(
+                                     name,
+                                     input.decode("utf-8"),
+                                     output.decode("utf-8")
+                                     ))
 
 
 def count_calls(method: Callable) -> Callable:
