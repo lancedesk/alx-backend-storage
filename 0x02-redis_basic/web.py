@@ -8,8 +8,14 @@ and to cache the HTML content of the URL for a specified period of time.
 
 import redis
 import requests
-from typing import Callable
 from functools import wraps
+from typing import Callable
+
+
+redis_client = redis.Redis()
+"""
+Radis instance at module level
+"""
 
 
 def count_requests(method: Callable) -> Callable:
@@ -18,19 +24,19 @@ def count_requests(method: Callable) -> Callable:
     """
 
     @wraps(method)
-    def wrapper(url: str) -> str:
+    def wrapper(url) -> str:
         """
         Wrapper function to count requests and cache the HTML content.
         """
 
-        redis_client = redis.Redis()
         redis_client.incr(f'count:{url}')
-        cached_html = redis_client.get(f'{url}')
+        cached_html = redis_client.get(f'result:{url}')
         if cached_html:
             return cached_html.decode('utf-8')
-        response = method(url)
-        redis_client.set(f'{url}', response, 10)
-        return response
+        cached_html = method(url)
+        redis_client.set(f'count:{url}', 0)
+        redis_client.setex(f'result:{url}', 10, result)
+        return cached_html
     return wrapper
 
 
