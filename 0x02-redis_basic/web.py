@@ -6,64 +6,49 @@ This module defines a decorator to count the number of times a URL is requested
 and to cache the HTML content of the URL for a specified period of time.
 """
 
+import redis
 import requests
-import time
+from typing import Callable
 from functools import wraps
-from typing import Dict
 
-"""
-Separate dictionaries for storing cached web page contents
-and cached counts with timestamps
-"""
+redis_client = redis.Redis()
 
-page_cache: Dict[str, str] = {}
-request_cache: Dict[str, tuple] = {}
 
+def count_requests(method: Callable) -> Callable:
+    """
+    Decorator to count number of times a URL is requested and cache the result.
+    """
+
+    @wraps(method)
+    def wrapper(url: str) -> str:
+        """
+        Wrapper function to count requests and cache the HTML content.
+        """
+
+        redis_client.incr(f"count:{url}")
+        cached_html = redis_client.get(f"cached:{url}")
+        if cached_html:
+            return cached_html.decode('utf-8')
+
+        html_content = method(url)
+        redis_client.set(f'count:{url}', 0)
+        redis_client.setex(f"cached:{url}", 10, html_content)
+
+        return html_content
+
+    return wrapper
+
+
+@count_requests
 def get_page(url: str) -> str:
     """
-    Retrieves the HTML content of a URL from cache or fetches it from the web.
+    Fetch the HTML content of a URL.
 
     Args:
-        url (str): The URL to fetch the HTML content from.
+        url (str): The URL to fetch.
 
     Returns:
         str: The HTML content of the URL.
     """
-
-    if url in page_cache:
-        print(f"Retrieving from cache: {url}")
-        return page_cache[url]
-    else:
-        print(f"Retrieving from web: {url}")
-        response = requests.get(url)
-        result = response.text
-        page_cache[url] = result
-        return result
-
-def cache_with_expiration(expiration: int):
-    """
-    Decorator to cache the HTML content of a URL with expiration time.
-
-    Args:
-        expiration (int): The expiration time for cached content in seconds.
-
-    Returns:
-        Callable: The decorated function.
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            url = args[0]
-            count_key = f"count:{url}"
-            if count_key in request_cache:
-                count, timestamp = request_cache[count_key]
-                if time.time() - timestamp > expiration:
-                    result = func(*args, **kwargs)
-                    request_cache[count_key] = (count + 1, time.time())
-                    return result
-                else:
-                    request_cache[count_key] = (count + 1, timestamp)
-                    return
-    return wrapper
-    return decorator
+    response = requests.get(url)
+    return response.text
