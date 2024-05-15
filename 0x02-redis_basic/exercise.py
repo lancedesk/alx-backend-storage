@@ -56,18 +56,18 @@ def replay(method: Callable) -> None:
     redis_client = redis.Redis()
 
     inputs_key = f"{method_name}: inputs"
-	outputs_key = f"{method_name}: outputs"
+    outputs_key = f"{method_name}: outputs"
 
     inputs = redis_client.lrange(inputs_key, 0, -1)
     outputs = redis_client.lrange(outputs_key, 0, -1)
 
     calls_count = len(inputs)
 
-    print("{} was called {} times".format(method_name, calls_count))
+    print("{} was called {} times:".format(method_name, calls_count))
     for input_data, output_data in zip(inputs, outputs):
-        input_data = input_data.decode("utf-8")
-        output_data = output_data.decode("utf-8")
-        print(f"{method_name}(*{input_data}) -> {output_data}")
+        input_value = input_data.decode("utf-8")
+        output_value = output_data.decode("utf-8")
+        print("{}(*{}) -> {}").format(method_name, input_value, output_value)
 
 
 def count_calls(method: Callable) -> Callable:
