@@ -38,7 +38,7 @@ def call_history(method: Callable) -> Callable:
         method_name = method.__qualname__
         self._redis.rpush(method_name + ":inputs", str(args))
         output_data = method(self, *args, **kwargs)
-        self._redis.rpush(method_name + ":outputs", str(output_data))
+        self._redis.rpush(method_name + ":outputs", output_data)
         return output_data
 
     return wrapper
@@ -53,15 +53,14 @@ def replay(method: Callable) -> None:
         The method for which the call history will be displayed.
     """
     method_name = method.__qualname__
-    redis_client = method.__self__._redis
+    redis_client = redis.Redis()
+    call_count = redis_client.get(method_name).decode("utf-8")
+    print("{} was called {} times:".format(method_name, call_count))
     inputs = redis_client.lrange(method_name + ":inputs", 0, -1)
     outputs = redis_client.lrange(method_name + ":outputs", 0, -1)
-
-    print(f"{method_name} was called {len(inputs)} times:")
     for input_data, output_data in zip(inputs, outputs):
-        input_data = input_data.decode("utf-8")
-        output_data = output_data.decode("utf-8")
-        print(f"{method_name}(*{input_data}) -> {output_data}")
+        print("{}(*{}) -> {}".format(method_name, input_data.decode('utf-8'),
+                                     output_data.decode('utf-8')))
 
 
 def count_calls(method: Callable) -> Callable:
